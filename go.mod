@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/gomodule/redigo v1.8.9
 	github.com/google/uuid v1.3.0
+	github.com/guregu/null v4.0.0+incompatible
 	github.com/opentracing/opentracing-go v1.2.0
 	go.etcd.io/etcd/api/v3 v3.5.6
 	go.etcd.io/etcd/client/v3 v3.5.6
