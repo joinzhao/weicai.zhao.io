@@ -18,6 +18,7 @@ type ReportReader interface {
 
 // ReportWriter 只写报告
 type ReportWriter interface {
+	CreateInBatches(tablers ...tablex.Tabler) error
 	Create(tablex.Tabler) error
 	Update(tablex.Tabler, ...conditionx.Where) error
 	Delete(tablex.Tabler, ...conditionx.Where) error

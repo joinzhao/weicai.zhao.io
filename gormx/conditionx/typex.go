@@ -7,29 +7,47 @@ import (
 
 type Id int64
 
-func (id Id) Condition() string {
+func (c Id) Condition() string {
 	return "id = ?"
 }
-func (id Id) Args() []interface{} {
-	return []interface{}{id}
+func (c Id) Args() []interface{} {
+	return []interface{}{c}
 }
 
 type Uuid string
 
-func (id Uuid) Condition() string {
+func (c Uuid) Condition() string {
 	return "uuid = ?"
 }
-func (id Uuid) Args() []interface{} {
-	return []interface{}{id}
+func (c Uuid) Args() []interface{} {
+	return []interface{}{c}
+}
+
+type Code string
+
+func (c Code) Condition() string {
+	return "code = ?"
+}
+func (c Code) Args() []interface{} {
+	return []interface{}{c}
 }
 
 type Status uint8
 
-func (id Status) Condition() string {
+func (c Status) Condition() string {
 	return "status = ?"
 }
-func (id Status) Args() []interface{} {
-	return []interface{}{id}
+func (c Status) Args() []interface{} {
+	return []interface{}{c}
+}
+
+type Name string
+
+func (name Name) Condition() string {
+	return "name = ?"
+}
+func (name Name) Args() []interface{} {
+	return []interface{}{name}
 }
 
 // condition with table name

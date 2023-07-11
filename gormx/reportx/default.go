@@ -31,6 +31,14 @@ func (op *operatr) Create(table tablex.Tabler) error {
 	return op.db.Model(table).Create(table).Error
 }
 
+func (op *operatr) CreateInBatches(tablers ...tablex.Tabler) error {
+	if len(tablers) > 0 {
+		return op.db.Model(&tablers).CreateInBatches(&tablers, 500).Error
+
+	}
+	return nil
+}
+
 func (op *operatr) Update(table tablex.Tabler, wheres ...conditionx.Where) error {
 	db := op.db.Model(table)
 	op.where(db, wheres...)
