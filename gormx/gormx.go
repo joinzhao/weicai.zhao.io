@@ -95,6 +95,22 @@ func (m *Manager) Use(ctx context.Context, key string) (*gorm.DB, error) {
 	return conn.Session(&gorm.Session{NewDB: true, Context: ctx}), nil
 }
 
+// MustUseUsage return engine from usage key
+func (m *Manager) MustUseUsage(ctx context.Context, key string) *gorm.DB {
+
+	config, ok := m.configs[key]
+	if !ok {
+		panic(fmt.Errorf("gormx: miss [%s] config", key))
+	}
+
+	conn, err := m.getGormConn(config)
+	if err != nil {
+		panic(err)
+	}
+
+	return conn.Session(&gorm.Session{NewDB: true, Context: ctx})
+}
+
 // MustUse return default engine, default is the first config in config,
 // if err, got panic
 func (m *Manager) MustUse(ctx context.Context) *gorm.DB {
