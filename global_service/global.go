@@ -27,37 +27,38 @@ func (m *manage) RegisterGormRepo(t reflect.Type, f repox.InitFuncWithGorm, usag
 		m.gormRepoManage = make(map[string]*repox.ManageWithGorm)
 	}
 
-	if _, ok := m.gormRepoManage[usage]; !ok {
-		repo := &repox.ManageWithGorm{
+	repo, ok := m.gormRepoManage[usage]
+	if !ok {
+		repo = &repox.ManageWithGorm{
 			NewDB: func() *gorm.DB {
 				return m.mysqlManage.MustUseUsage(nil, usage)
 			},
 		}
-		repo.Register(t, f)
-		m.gormRepoManage[usage] = repo
 	}
+	repo.Register(t, f)
+	m.gormRepoManage[usage] = repo
 }
 
 // GormRepo 获取已注册的 repo
 func (m *manage) GormRepo(t reflect.Type) repox.Repo {
 	if m.gormAndRepo == nil {
-		fmt.Println(fmt.Errorf("this repo is not exists"))
+		fmt.Println(fmt.Errorf("gorm repo map is nil"))
 		return nil
 	}
 	usage, ok := m.gormAndRepo[t]
 	if !ok {
-		fmt.Println(fmt.Errorf("this repo is not exists"))
+		fmt.Println(fmt.Errorf("this type is not exists in gorm repo map"))
 		return nil
 	}
 	repoManage, ok := m.gormRepoManage[usage]
 	if !ok {
-		fmt.Println(fmt.Errorf("this repo is not exists"))
+		fmt.Println(fmt.Errorf("this manage is nil"))
 		return nil
 	}
 
 	repo := repoManage.Load(t)
 	if repo == nil {
-		fmt.Println(fmt.Errorf("this repo is not exists"))
+		fmt.Println(fmt.Errorf("this type is not exists in manage"))
 		return nil
 	}
 
