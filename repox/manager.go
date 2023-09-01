@@ -12,19 +12,26 @@ type InitFuncWithGorm func(db *gorm.DB) Repo
 // NewDB 实例化 gorm db 对象
 type NewDB func() *gorm.DB
 
-// ManageWithGorm 资源管理
-type ManageWithGorm struct {
+// Manager 资源管理
+type Manager struct {
 	pool  sync.Map
 	NewDB NewDB
 }
 
+func New(f NewDB) *Manager {
+	return &Manager{
+		pool:  sync.Map{},
+		NewDB: f,
+	}
+}
+
 // Register 注册
-func (m *ManageWithGorm) Register(t reflect.Type, f InitFuncWithGorm) {
+func (m *Manager) Register(t reflect.Type, f InitFuncWithGorm) {
 	m.pool.Store(t, f)
 }
 
 // Load 加载
-func (m *ManageWithGorm) Load(t reflect.Type) Repo {
+func (m *Manager) Load(t reflect.Type) Repo {
 	v, ok := m.pool.Load(t)
 	if ok {
 		return v.(InitFuncWithGorm)(m.NewDB())

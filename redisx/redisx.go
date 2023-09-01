@@ -37,7 +37,7 @@ type (
 	}
 )
 
-func NewRedisManager(configs ...*Config) (*Manager, error) {
+func New(configs ...*Config) (*Manager, error) {
 	if len(configs) == 0 {
 		return nil, fmt.Errorf(errorFormat, "empty config")
 	}
