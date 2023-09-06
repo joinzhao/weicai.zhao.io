@@ -4,12 +4,7 @@ type Sort interface {
 	Weight() int
 }
 
-type SortNode interface {
-	BasicNode
-	Sort
-}
-
-type SortNodes []SortNode
+type SortNodes []Sort
 
 func (s SortNodes) Len() int           { return len(s) }
 func (s SortNodes) Less(i, j int) bool { return s[i].Weight() > s[j].Weight() }

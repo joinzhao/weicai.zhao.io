@@ -10,7 +10,6 @@ type templateRepo[T schema.Tabler] struct {
 	repoName  string
 	db        *gorm.DB
 	batchSize int
-
 	tableFunc NewTabler[T]
 }
 
@@ -40,26 +39,26 @@ func (m *templateRepo[T]) CreateInBatch(items []T) (int64, error) {
 	db := m.db.Model(&items).CreateInBatches(&items, m.batchSize)
 	return db.RowsAffected, db.Error
 }
-func (m *templateRepo[T]) Updates(item any, wheres ...gormx.Where) (int64, error) {
-	db := gormx.Wheres(wheres).Build(m.db.Model(item).Table(m.New().TableName())).Updates(item)
+func (m *templateRepo[T]) Updates(item any, wheres ...gormx.Option) (int64, error) {
+	db := gormx.Options(wheres).Build(m.db.Model(item).Table(m.New().TableName())).Updates(item)
 	return db.RowsAffected, db.Error
 }
-func (m *templateRepo[T]) Update(item T, wheres ...gormx.Where) error {
-	return gormx.Wheres(wheres).Build(m.db.Model(item)).Updates(item).Error
+func (m *templateRepo[T]) Update(item T, wheres ...gormx.Option) error {
+	return gormx.Options(wheres).Build(m.db.Model(item)).Updates(item).Error
 }
-func (m *templateRepo[T]) Delete(wheres ...gormx.Where) (int64, error) {
-	db := gormx.Wheres(wheres).Build(m.db.Model(m.New())).Delete(m.New())
+func (m *templateRepo[T]) Delete(wheres ...gormx.Option) (int64, error) {
+	db := gormx.Options(wheres).Build(m.db.Model(m.New())).Delete(m.New())
 	return db.RowsAffected, db.Error
 }
-func (m *templateRepo[T]) First(item T, wheres ...gormx.Where) error {
-	return gormx.Wheres(wheres).Build(m.db.Model(item)).First(item).Error
+func (m *templateRepo[T]) First(item T, wheres ...gormx.Option) error {
+	return gormx.Options(wheres).Build(m.db.Model(item)).First(item).Error
 }
-func (m *templateRepo[T]) Find(limit int, offset int, wheres ...gormx.Where) (items []T, err error) {
-	err = gormx.Wheres(wheres).Build(m.db.Model(items)).Limit(limit).Offset(offset).Find(items).Error
+func (m *templateRepo[T]) Find(wheres ...gormx.Option) (items []T, err error) {
+	err = gormx.Options(wheres).Build(m.db.Model(items)).Find(items).Error
 	return
 }
-func (m *templateRepo[T]) Count(wheres ...gormx.Where) (c int64, err error) {
-	err = gormx.Wheres(wheres).Build(m.db.Model(m.New())).Count(&c).Error
+func (m *templateRepo[T]) Count(wheres ...gormx.Option) (c int64, err error) {
+	err = gormx.Options(wheres).Build(m.db.Model(m.New())).Count(&c).Error
 	return
 }
 

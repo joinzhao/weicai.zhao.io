@@ -50,22 +50,22 @@ type Creator[T schema.Tabler] interface {
 }
 
 type Updater[T schema.Tabler] interface {
-	Updates(any, ...gormx.Where) (int64, error)
-	Update(T, ...gormx.Where) error
+	Updates(any, ...gormx.Option) (int64, error)
+	Update(T, ...gormx.Option) error
 }
 
 type Deleter[T schema.Tabler] interface {
-	Delete(...gormx.Where) (int64, error)
+	Delete(...gormx.Option) (int64, error)
 }
 
 type First[T schema.Tabler] interface {
-	First(T, ...gormx.Where) error
+	First(T, ...gormx.Option) error
 }
 
 type Find[T schema.Tabler] interface {
-	Find(int, int, ...gormx.Where) ([]T, error)
+	Find(...gormx.Option) ([]T, error)
 }
 
 type Counter[T schema.Tabler] interface {
-	Count(...gormx.Where) (int64, error)
+	Count(...gormx.Option) (int64, error)
 }
