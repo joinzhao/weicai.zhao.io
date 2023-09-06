@@ -1,6 +1,8 @@
 package share
 
 import (
+	"context"
+	"gorm.io/gorm"
 	"weicai.zhao.io/consts"
 	"weicai.zhao.io/gormx"
 	"weicai.zhao.io/repox"
@@ -8,7 +10,8 @@ import (
 
 func New(ops ...Option) (*Manager, error) {
 	var m = &Manager{
-		mode: consts.DebugMode,
+		mode:        consts.DebugMode,
+		repoManager: make(map[string]*repox.Manager),
 	}
 	for i := 0; i < len(ops); i++ {
 
@@ -28,10 +31,19 @@ func WithMysqlManager(configs ...*gormx.Config) Option {
 	}
 }
 
-// WithRepoManager repox.Manager 依赖 gormx.Manager，必须先执行 gormx.Manager 的初始化方法
-func WithRepoManager(f func(m *gormx.Manager) *repox.Manager) Option {
+func WithGormManager(manager *gormx.Manager) Option {
 	return func(m *Manager) error {
-		m.repoManager = f(m.mysqlManager)
+		m.mysqlManager = manager
+		return nil
+	}
+}
+
+// WithRepoManager repox.Manager 依赖 gormx.Manager，必须先执行 gormx.Manager 的初始化方法
+func WithRepoManager(usage string) Option {
+	return func(m *Manager) error {
+		m.repoManager[usage] = repox.New(func() *gorm.DB {
+			return m.mysqlManager.MustUseUsage(context.Background(), usage)
+		})
 		return nil
 	}
 }

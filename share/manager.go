@@ -12,11 +12,11 @@ import (
 type Manager struct {
 	mode         consts.Mode
 	mysqlManager *gormx.Manager
-	repoManager  *repox.Manager
+	repoManager  map[string]*repox.Manager
 }
 
-func (m *Manager) RepoManager() *repox.Manager {
-	return m.repoManager
+func (m *Manager) RepoManager(usage string) *repox.Manager {
+	return m.repoManager[usage]
 }
 func (m *Manager) GormManager() *gormx.Manager {
 	return m.mysqlManager
@@ -38,9 +38,13 @@ func (m *Manager) NewWithRepo(target any) {
 	}
 
 	for i := 0; i < v.NumField(); i++ {
-		repo := m.repoManager.Load(v.Field(i).Type())
-		if repo != nil {
-			v.Field(i).Set(reflect.ValueOf(repo))
+		for _, manager := range m.repoManager {
+			repo := manager.Load(v.Field(i).Type())
+			if repo != nil {
+				v.Field(i).Set(reflect.ValueOf(repo))
+				// 找到之后退出循环
+				break
+			}
 		}
 	}
 }

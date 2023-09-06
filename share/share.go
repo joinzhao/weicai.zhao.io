@@ -18,8 +18,8 @@ func Init(ops ...Option) (err error) {
 	return
 }
 
-func RepoManager() *repox.Manager {
-	return global.RepoManager()
+func RepoManager(usage string) *repox.Manager {
+	return global.RepoManager(usage)
 }
 
 func GormManager() *gormx.Manager {

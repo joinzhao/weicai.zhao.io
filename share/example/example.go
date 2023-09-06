@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"weicai.zhao.io/gormx"
-	"weicai.zhao.io/repox"
 	"weicai.zhao.io/share"
 )
 
@@ -19,13 +17,7 @@ func Example() {
 		MaxLifeTime: 10,
 	}
 
-	manager, err := share.New(share.WithMysqlManager(config), share.WithRepoManager(func(m *gormx.Manager) *repox.Manager {
-		return &repox.Manager{
-			NewDB: func() *gorm.DB {
-				return m.Default()
-			},
-		}
-	}))
+	manager, err := share.New(share.WithMysqlManager(config), share.WithRepoManager("config"))
 	if err != nil {
 		panic(err)
 	}
