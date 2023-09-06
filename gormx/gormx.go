@@ -3,6 +3,7 @@ package gormx
 import (
 	"context"
 	"fmt"
+	"github.com/DATA-DOG/go-sqlmock"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -40,6 +41,7 @@ type (
 		MaxIdleConn int
 		MaxOpenConn int
 		MaxLifeTime int
+		Mock        bool `json:"-"` // default false,disable parsing
 	}
 
 	// Manager store all gorm db engine according to the config usage key
@@ -48,6 +50,7 @@ type (
 		configs       map[string]*Config
 		defaultConfig *Config
 		writers       []io.Writer
+		mock          sqlmock.Sqlmock
 	}
 )
 
@@ -135,6 +138,9 @@ func (m *Manager) Default() *gorm.DB {
 
 // getGormConn transfer sql to gorm db
 func (m *Manager) getGormConn(config *Config) (*gorm.DB, error) {
+	if config.Mock {
+		return m.mockDB()
+	}
 
 	conn, err := m.getSqlConn(config)
 	if err != nil {
@@ -155,6 +161,26 @@ func (m *Manager) getGormConn(config *Config) (*gorm.DB, error) {
 	}
 
 	return conn.DB, nil
+}
+
+func (m *Manager) SqlMock() sqlmock.Sqlmock {
+	return m.mock
+}
+
+func (m *Manager) mockDB() (*gorm.DB, error) {
+	sqlDB, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+
+	if err != nil {
+		return nil, err
+	}
+	db, err := gorm.Open(mysql.New(mysql.Config{Conn: sqlDB, SkipInitializeWithVersion: true}))
+	if err != nil {
+		return nil, err
+	}
+
+	m.mock = mock
+
+	return db, nil
 }
 
 // getSqlConn get sql conn from sharedCall conn
@@ -211,8 +237,8 @@ func (m *Manager) create(singleCfg *Config) (*sql, error) {
 	_db, err = gorm.Open(mysql.New(mysql.Config{
 		DSN: fmt.Sprintf("%s/%s?charset=utf8mb4&parseTime=True&loc=Local",
 			singleCfg.DSN, singleCfg.Database), // DSN data source name, parse time is important !!!
-		DefaultStringSize:         256,  // string default length
-		SkipInitializeWithVersion: true, // auto config according to version
+		DefaultStringSize:         256,         // string default length
+		SkipInitializeWithVersion: true,        // auto config according to version
 	}), &gorm.Config{
 		SkipDefaultTransaction:                   false,
 		NamingStrategy:                           nil,
