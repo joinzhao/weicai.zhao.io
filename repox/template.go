@@ -13,9 +13,9 @@ type templateRepo[T schema.Tabler] struct {
 	tableFunc NewTabler[T]
 }
 
-func NewRepo[T schema.Tabler](tableName string, db *gorm.DB, batchSize int, f NewTabler[T]) ReaderWriterRepo[T] {
+func NewRepo[T schema.Tabler](repoName string, db *gorm.DB, batchSize int, f NewTabler[T]) ReaderWriterRepo[T] {
 	return &templateRepo[T]{
-		repoName:  tableName,
+		repoName:  repoName,
 		db:        db,
 		batchSize: batchSize,
 		tableFunc: f,
@@ -60,16 +60,4 @@ func (m *templateRepo[T]) Find(wheres ...gormx.Option) (items []T, err error) {
 func (m *templateRepo[T]) Count(wheres ...gormx.Option) (c int64, err error) {
 	err = gormx.Options(wheres).Build(m.db.Model(m.New())).Count(&c).Error
 	return
-}
-
-func (m *templateRepo[T]) Transaction(f func(repo ReaderWriterRepo[T]) error) error {
-	return m.db.Transaction(func(tx *gorm.DB) error {
-		tmp := &templateRepo[T]{
-			repoName:  m.repoName,
-			db:        tx,
-			batchSize: m.batchSize,
-			tableFunc: m.tableFunc,
-		}
-		return f(tmp)
-	})
 }

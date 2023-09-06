@@ -13,10 +13,6 @@ type Tabler[T schema.Tabler] interface {
 	New() T
 }
 
-type Transaction[T schema.Tabler] interface {
-	Transaction(func(ReaderWriterRepo[T]) error) error
-}
-
 type ReaderWriterRepo[T schema.Tabler] interface {
 	Repo
 	Tabler[T]
