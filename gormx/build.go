@@ -62,3 +62,9 @@ func (w Options) Build(db *gorm.DB) *gorm.DB {
 	}
 	return db
 }
+
+type PreloadString string
+
+func (s PreloadString) Do(tx *gorm.DB) *gorm.DB {
+	return tx.Preload(string(s))
+}

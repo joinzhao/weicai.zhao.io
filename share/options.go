@@ -31,9 +31,31 @@ func WithMysqlManager(configs ...*gormx.Config) Option {
 	}
 }
 
-func WithGormManager(manager *gormx.Manager) Option {
+func WithMysqlManagerBy(manager *gormx.Manager) Option {
 	return func(m *Manager) error {
 		m.mysqlManager = manager
+		return nil
+	}
+}
+
+func WithRepoManagerByConfigs(configs ...*gormx.Config) Option {
+	return func(m *Manager) error {
+		for _, config := range configs {
+			m.repoManager[config.Usage] = repox.New(func() *gorm.DB {
+				return m.mysqlManager.MustUseUsage(context.Background(), config.Usage)
+			})
+		}
+		return nil
+	}
+}
+
+func WithRepoManagerByUsages(usages ...string) Option {
+	return func(m *Manager) error {
+		for _, usage := range usages {
+			m.repoManager[usage] = repox.New(func() *gorm.DB {
+				return m.mysqlManager.MustUseUsage(context.Background(), usage)
+			})
+		}
 		return nil
 	}
 }

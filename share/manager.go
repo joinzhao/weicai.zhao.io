@@ -1,12 +1,10 @@
 package share
 
 import (
-	"github.com/gin-gonic/gin"
 	"reflect"
 	"weicai.zhao.io/consts"
 	"weicai.zhao.io/gormx"
 	"weicai.zhao.io/repox"
-	"weicai.zhao.io/responsex"
 )
 
 type Manager struct {
@@ -22,10 +20,6 @@ func (m *Manager) GormManager() *gormx.Manager {
 	return m.mysqlManager
 }
 
-func (m *Manager) GinResponse(ctx *gin.Context) responsex.Response {
-	return responsex.NewGinJsonResponse(m.mode, ctx)
-}
-
 func (m *Manager) NewWithRepo(target any) {
 	// 初始化
 	if target == nil {
@@ -39,7 +33,8 @@ func (m *Manager) NewWithRepo(target any) {
 
 	for i := 0; i < v.NumField(); i++ {
 		for _, manager := range m.repoManager {
-			repo := manager.Load(v.Field(i).Type())
+			field := v.Field(i)
+			repo := manager.Load(field.Type())
 			if repo != nil {
 				v.Field(i).Set(reflect.ValueOf(repo))
 				// 找到之后退出循环

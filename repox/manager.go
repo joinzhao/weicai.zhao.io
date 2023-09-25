@@ -2,6 +2,7 @@ package repox
 
 import (
 	"gorm.io/gorm"
+	"log"
 	"reflect"
 	"sync"
 )
@@ -27,11 +28,13 @@ func New(f NewDB) *Manager {
 
 // Register 注册
 func (m *Manager) Register(t reflect.Type, f InitFuncWithGorm) {
+	log.Println("TYPE < : ", t)
 	m.pool.Store(t, f)
 }
 
 // Load 加载
 func (m *Manager) Load(t reflect.Type) Repo {
+	log.Println("TYPE > : ", t)
 	v, ok := m.pool.Load(t)
 	if ok {
 		return v.(InitFuncWithGorm)(m.NewDB())

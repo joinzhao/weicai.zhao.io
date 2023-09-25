@@ -2,6 +2,7 @@ package share
 
 import (
 	"github.com/gin-gonic/gin"
+	"weicai.zhao.io/consts"
 	"weicai.zhao.io/gormx"
 	"weicai.zhao.io/repox"
 	"weicai.zhao.io/responsex"
@@ -26,6 +27,12 @@ func GormManager() *gormx.Manager {
 	return global.mysqlManager
 }
 
+// ------------------------ MODE ----------------------
+var mode consts.Mode = consts.DebugMode
+
+func SetMode(m consts.Mode) {
+	mode = m
+}
 func GinResponse(ctx *gin.Context) responsex.Response {
-	return global.GinResponse(ctx)
+	return responsex.NewGinJsonResponse(mode, ctx)
 }
