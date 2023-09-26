@@ -22,7 +22,7 @@ func main() {
 			Name: "create po",
 			Key:  "create_po",
 			Handle: []script.Handle{func() error {
-				parse.Generate(gormx.Config{
+				parse.GenerateModule("./", "system", gormx.Config{
 					Usage:       "default",
 					RunMode:     "debug",
 					DSN:         "root:root@tcp(127.0.0.1:3307)",

@@ -2,23 +2,61 @@ package parse
 
 import (
 	"fmt"
+	"gorm.io/gorm"
 	"path"
+	"weicai.zhao.io/gormx"
 	"weicai.zhao.io/parse/go_file"
 	"weicai.zhao.io/parse/sql_file"
 	"weicai.zhao.io/tools"
 )
+
+func GenerateModule(path, name string, conf gormx.Config) {
+	m := &Module{
+		Path: path,
+		Name: name,
+	}
+	m.Generate(conf)
+}
 
 type Module struct {
 	Path string
 	Name string
 }
 
-func (m *Module) Parse(tables []sql_file.Table) {
+func (m *Module) Generate(conf gormx.Config) {
+	tables := m.getTables(conf)
+
+	m.generatePo(tables)
+}
+
+func (m *Module) getTables(conf gormx.Config) []sql_file.Table {
+	var databaseName = conf.Database
+	conf.Database = "information_schema"
+	manager := gormx.New([]*gormx.Config{&conf})
+
+	var items = make([]sql_file.Table, 0)
+	err := manager.Default().
+		Model(&items).
+		Where("TABLE_SCHEMA = ?", databaseName).
+		Preload("Column", func(tx *gorm.DB) *gorm.DB {
+			return tx.Select("*").Where("TABLE_SCHEMA = ?", databaseName).Order("ORDINAL_POSITION ASC")
+		}).
+		Find(&items).
+		Error
+	if err != nil {
+		panic(err)
+	}
+
+	return items
+}
+
+func (m *Module) generatePo(tables []sql_file.Table) {
 	var tableNameFile = go_file.File{
-		Path:     path.Join(m.Path, baseDir, poPathDir),
+		Path:     path.Join(m.Path, baseDir, m.Name, poPathDir),
 		FileName: "global_table_name.go",
 		Content: go_file.Content{
-			Consts: go_file.Consts{},
+			PackageName: poPathDir,
+			Consts:      go_file.Consts{},
 		},
 	}
 	for i := 0; i < len(tables); i++ {
@@ -30,7 +68,6 @@ func (m *Module) Parse(tables []sql_file.Table) {
 	}
 	// create internal/module/po/global_table_name.go
 	tableNameFile.Create()
-
 }
 
 // create internal/module/po/table_name.go
@@ -43,28 +80,31 @@ func (m *Module) buildStructFromTable(table sql_file.Table) {
 	m.structTableNameFunc(&str)
 
 	tableFile := go_file.File{
-		Path:     path.Join(m.Path, baseDir, poPathDir),
+		Path:     path.Join(m.Path, baseDir, m.Name, poPathDir),
 		FileName: fmt.Sprintf("%s.go", table.Name),
 		Content: go_file.Content{
-			Structs: go_file.Structs{str},
+			PackageName: poPathDir,
+			Structs:     go_file.Structs{str},
 		},
 	}
 	tableFile.Create()
 
 	tableGetFile := go_file.File{
-		Path:     path.Join(m.Path, baseDir, poPathDir),
+		Path:     path.Join(m.Path, baseDir, m.Name, poPathDir),
 		FileName: fmt.Sprintf("%s_get.go", table.Name),
 		Content: go_file.Content{
-			Functions: m.structGetFunc(str),
+			PackageName: poPathDir,
+			Functions:   m.structGetFunc(str),
 		},
 	}
 	tableGetFile.Create()
 
 	tableSetFile := go_file.File{
-		Path:     path.Join(m.Path, baseDir, poPathDir),
+		Path:     path.Join(m.Path, baseDir, m.Name, poPathDir),
 		FileName: fmt.Sprintf("%s_set.go", table.Name),
 		Content: go_file.Content{
-			Functions: m.structSetFunc(str),
+			PackageName: poPathDir,
+			Functions:   m.structSetFunc(str),
 		},
 	}
 	tableSetFile.Create()
