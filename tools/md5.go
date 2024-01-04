@@ -46,19 +46,3 @@ func MD5StringToLower(data string) string {
 func MD5StringSimpleToLower(data string) string {
 	return strings.ToLower(MD5StringSimple(data))
 }
-
-//func testMD5() {
-//	var str = "123456"
-//	fmt.Println("待加密字符串：", str)
-//
-//	enSimple := MD5StringSimple(str) // 待加密字符串： 123456
-//
-//	fmt.Println("MD5StringSimple加密后字符串：", enSimple)        // MD5StringSimple加密后字符串： e10adc3949ba59abbe56e057f20f883e
-//	fmt.Println("MD5StringSimple加密后字符串长度：", len(enSimple)) // MD5StringSimple加密后字符串长度： 32
-//
-//	en := MD5String(str)
-//	fmt.Println("MD5String加密后字符串：", en)        // MD5String加密后字符串： e10adc3949ba59abbe56e057f20f883e
-//	fmt.Println("MD5String加密后字符串长度：", len(en)) // MD5String加密后字符串长度： 32
-//
-//	fmt.Println("MD5StringSimple 和 MD5String 加密结果是否相等：", enSimple == en) // MD5StringSimple 和 MD5String 加密结果是否相等： true
-//}
