@@ -3,148 +3,158 @@ package redisx
 import (
 	"context"
 	"fmt"
-	"github.com/go-redis/redis/v8"
+	"github.com/go-redis/redis"
 	"io"
-	"net"
 	"sync"
 	"time"
 	"weicai.zhao.io/resource"
 )
 
-const (
-	errorFormat = "[go-redis] err: %s"
-)
-
 type (
-	redisX struct {
-		client *redis.Client
-		sync.Once
-	}
-
 	Config struct {
-		Usage       string `json:"usage"`
-		DSN         string `json:"dsn"`
-		Password    string `json:"password"`
-		Username    string `json:"username"`
-		DB          int    `json:"db"`
-		MaxIdleConn int    `json:"maxIdleConn"`
+		Usage    string // use to manage connection
+		Addr     string // 127.0.0.1:6379
+		DB       int    // select 0
+		Password string // password
 	}
-
+	// sql is a db shadow
+	sql struct {
+		*redis.Client
+		once sync.Once
+	}
+	// Manager store all redis db engine according to the conf usage key
 	Manager struct {
 		resources     *resource.Manager
 		configs       map[string]*Config
-		defaultConfig string
+		defaultConfig *Config
+		writers       []io.Writer
 	}
 )
 
-func New(configs ...*Config) (*Manager, error) {
+// New return a redis db Manager
+func New(configs []*Config) *Manager {
 	if len(configs) == 0 {
-		return nil, fmt.Errorf(errorFormat, "empty config")
+		panic("please complete your mysql conf")
 	}
 
-	var cfgs = make(map[string]*Config)
-	for i := 0; i < len(configs); i++ {
-		cfgs[configs[i].Usage] = configs[i]
+	cfgMap := make(map[string]*Config)
+	for _, config := range configs {
+		cfgMap[config.Usage] = config
 	}
 
 	return &Manager{
 		resources:     resource.NewManager(),
-		configs:       cfgs,
-		defaultConfig: configs[0].Usage,
-	}, nil
+		configs:       cfgMap,
+		defaultConfig: configs[0],
+	}
 }
 
-func (x *redisX) Close() error {
-	return nil
+// Use return engine from incoming key
+func (m *Manager) Use(ctx context.Context, key string) (*redis.Client, error) {
+
+	config, ok := m.configs[key]
+	if !ok {
+		return nil, fmt.Errorf("gormx: miss [%s] conf", key)
+	}
+
+	conn, err := m.getRedisConn(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return conn.WithContext(ctx), nil
 }
 
-func (m *Manager) DefaultUse() *redis.Client {
-	return m.MustUse(m.defaultConfig)
-}
+// MustUseUsage return engine from usage key
+func (m *Manager) MustUseUsage(ctx context.Context, key string) *redis.Client {
 
-func (m *Manager) MustUse(usage string) *redis.Client {
-	cli, err := m.Use(usage)
+	config, ok := m.configs[key]
+	if !ok {
+		panic(fmt.Errorf("gormx: miss [%s] conf", key))
+	}
+
+	conn, err := m.getRedisConn(config)
 	if err != nil {
 		panic(err)
 	}
 
-	return cli
+	return conn.WithContext(ctx)
 }
 
-func (m *Manager) Use(usage string) (*redis.Client, error) {
-	cfg, ok := m.configs[usage]
-
-	if !ok {
-		return nil, fmt.Errorf(errorFormat, "key not exists")
+// MustUse return default engine, default is the first conf in conf,
+// if err, got panic
+func (m *Manager) MustUse(ctx context.Context) *redis.Client {
+	conn, err := m.getRedisConn(m.defaultConfig)
+	if err != nil {
+		panic(err)
 	}
 
-	cli, err := m.getConn(cfg)
+	return conn.WithContext(ctx)
+}
 
+// Default return default engine, default is the first conf in conf
+func (m *Manager) Default() *redis.Client {
+	conn, err := m.getRedisConn(m.defaultConfig)
+	if err != nil {
+		panic(err)
+	}
+
+	return conn.WithContext(context.Background())
+}
+
+// getRedisConn transfer sql to redis client
+func (m *Manager) getRedisConn(config *Config) (*redis.Client, error) {
+	conn, err := m.getSqlConn(config)
 	if err != nil {
 		return nil, err
 	}
 
-	return cli, nil
-}
-
-func (m *Manager) getConn(cfg *Config) (*redis.Client, error) {
-	var err error
-	x, _ := m.connRedis(cfg)
-
-	x.Do(func() {
-		err = x.client.Ping(context.Background()).Err()
+	conn.once.Do(func() {
+		err = conn.Ping().Err()
 	})
 
 	if err != nil {
 		return nil, err
 	}
-
-	return x.client, nil
+	return conn.Client, nil
 }
 
-func (m *Manager) connRedis(cfg *Config) (*redisX, error) {
-	get, _ := m.resources.Get(cfg.Usage, func() (io.Closer, error) {
-		client := m.create(cfg)
+// getSqlConn get sql conn from sharedCall conn
+func (m *Manager) getSqlConn(cfg *Config) (*sql, error) {
 
-		return &redisX{client, sync.Once{}}, nil
+	get, err := m.resources.Get(cfg.Usage, func() (io.Closer, error) {
+
+		create, err := m.create(cfg)
+		if err != nil {
+			return nil, err
+		}
+
+		return create, nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	return get.(*redisX), nil
+	return get.(*sql), nil
+
 }
 
-func (m *Manager) create(cfg *Config) *redis.Client {
-	return redis.NewClient(&redis.Options{
-		//连接信息
-		Network: "tcp",   //网络类型，tcp or unix，默认tcp
-		Addr:    cfg.DSN, //主机名+冒号+端口，默认localhost:6379
-		//可自定义连接函数
-		Dialer: func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return net.Dial(network, addr)
-		},
-		//钩子函数
-		OnConnect: func(ctx context.Context, cn *redis.Conn) error {
-			//仅当客户端执行命令时需要从连接池获取连接时，如果连接池需要新建连接时则会调用此钩子函数
-			return nil
-		},
-		Username: "",
-		Password: cfg.Password, //密码
-		DB:       cfg.DB,       // redis数据库index
-		//命令执行失败时的重试策略
-		MaxRetries:      0,                      // 命令执行失败时，最多重试多少次，默认为0即不重试
-		MinRetryBackoff: 8 * time.Millisecond,   //每次计算重试间隔时间的下限，默认8毫秒，-1表示取消间隔
-		MaxRetryBackoff: 512 * time.Millisecond, //每次计算重试间隔时间的上限，默认512毫秒，-1表示取消间隔
-		//超时
-		DialTimeout:  5 * time.Second, //连接建立超时时间，默认5秒。
-		ReadTimeout:  3 * time.Second, //读超时，默认3秒， -1表示取消读超时
-		WriteTimeout: 3 * time.Second, //写超时，默认等于读超时
-		PoolFIFO:     false,
-		//连接池容量及闲置连接数量
-		PoolSize:     15,              // 连接池最大socket连接数，默认为4倍CPU数， 4 * runtime.NumCPU
-		MinIdleConns: cfg.MaxIdleConn, //在启动阶段创建指定数量的Idle连接，并长期维持idle状态的连接数不少于指定数量；。
-		MaxConnAge:   0 * time.Second, //连接存活时长，从创建开始计时，超过指定时长则关闭连接，默认为0，即不关闭存活时长较长的连接
-		PoolTimeout:  4 * time.Second, //当所有连接都处在繁忙状态时，客户端等待可用连接的最大等待时长，默认为读超时+1秒。
-		IdleTimeout:  5 * time.Minute, //闲置超时，默认5分钟，-1表示取消闲置超时检查
-		//闲置连接检查包括IdleTimeout，MaxConnAge
-		IdleCheckFrequency: 60 * time.Second, //闲置连接检查的周期，默认为1分钟，-1表示不做周期性检查，只在客户端获取连接时对闲置连接进行处理。
+// create connect redis from incoming sql conf
+func (m *Manager) create(cfg *Config) (*sql, error) {
+	db := redis.NewClient(&redis.Options{
+		Addr:         cfg.Addr,
+		Password:     cfg.Password,
+		DB:           cfg.DB,
+		DialTimeout:  10 * time.Second,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		PoolTimeout:  30 * time.Second,
 	})
+
+	return &sql{db, sync.Once{}}, nil
+}
+
+// Close implements io closer
+func (s *sql) Close() error {
+	return s.Client.Close()
 }
