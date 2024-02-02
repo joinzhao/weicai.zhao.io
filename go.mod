@@ -2,6 +2,14 @@ module weicai.zhao.io
 
 go 1.18
 
+
+//replace weicai.zhao.io => ../
+//
+//require (
+//	gorm.io/gorm v1.25.0
+//	weicai.zhao.io v0.0.0-00010101000000-000000000000
+//)
+
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/go-redis/redis v6.15.9+incompatible

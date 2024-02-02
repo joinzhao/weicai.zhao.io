@@ -36,7 +36,7 @@ type (
 		Usage       string // use to manage connection
 		RunMode     string // debug, release
 		DSN         string // root:root@tcp(127.0.0.1:3306)
-		Database    string // default database
+		Database    string // default source
 		MaxIdleConn int
 		MaxOpenConn int
 		MaxLifeTime int
@@ -210,8 +210,8 @@ func (m *Manager) create(singleCfg *Config) (*sql, error) {
 	_db, err = gorm.Open(mysql.New(mysql.Config{
 		DSN: fmt.Sprintf("%s/%s?charset=utf8mb4&parseTime=True&loc=Local",
 			singleCfg.DSN, singleCfg.Database), // DSN data source name, parse time is important !!!
-		DefaultStringSize:         256,         // string default length
-		SkipInitializeWithVersion: true,        // auto config according to version
+		DefaultStringSize:         256,  // string default length
+		SkipInitializeWithVersion: true, // auto config according to version
 	}), &gorm.Config{
 		SkipDefaultTransaction:                   false,
 		NamingStrategy:                           nil,

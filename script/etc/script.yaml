@@ -1,0 +1,49 @@
+Po:
+  Mysql:
+    Usage: "default"
+    RunMode: "debug"
+    DSN: "root:root@tcp(127.0.0.1:3307)"
+    Database: "coffee"
+    Prefix: "system_"
+    MaxIdleConn: 10
+    MaxOpenConn: 10
+    MaxLifeTime: 10
+  Prefix: "yunka_system_"
+  Table: "yunka_system_api"
+  SourceFile: "./tmpl/po/model.go"
+  TargetPath: "./new/po"
+  NewPoPath: ""
+
+Repository:
+  Mysql:
+    Usage: "default"
+    RunMode: "debug"
+    DSN: "root:root@tcp(127.0.0.1:3307)"
+    Database: "coffee"
+    Prefix: "system_"
+    MaxIdleConn: 10
+    MaxOpenConn: 10
+    MaxLifeTime: 10
+  Prefix: "yunka_system_"
+  Table: "yunka_system_api"
+  SourceFile: "./tmpl/repository/model.go"
+  TargetPath: "./new/repository"
+  NewPoPath: "weicai.zhao.io/script/new/po"
+  OldPoPath: "weicai.zhao.io/script/tmpl/po"
+
+Dependency:
+  Mysql:
+    Usage: "default"
+    RunMode: "debug"
+    DSN: "root:root@tcp(127.0.0.1:3307)"
+    Database: "coffee"
+    Prefix: "system_"
+    MaxIdleConn: 10
+    MaxOpenConn: 10
+    MaxLifeTime: 10
+  Prefix: "yunka_system_"
+  Table: "yunka_system_api"
+  SourceFile: "./tmpl/dependency/model.go"
+  TargetPath: "./new/dependency"
+  NewPoPath: "weicai.zhao.io/script/new/po"
+  OldPoPath: "weicai.zhao.io/script/tmpl/po"
