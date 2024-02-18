@@ -4,6 +4,7 @@ import (
 	"weicai.zhao.io/gormx"
 	"weicai.zhao.io/script/internal"
 	"weicai.zhao.io/script/internal/create"
+	"weicai.zhao.io/typex"
 )
 
 const (
@@ -18,7 +19,7 @@ const (
 type Config struct {
 	Mysql      gormx.Config
 	Prefix     string
-	Table      string
+	Table      typex.StrList
 	SourceFile string
 	TargetPath string
 	NewPoPath  string

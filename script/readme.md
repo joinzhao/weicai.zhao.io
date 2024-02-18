@@ -22,7 +22,7 @@ go run main.go --config=configFilePath --cmd=cmdCode
     MaxLifeTime: 10
   # table prefix
   Prefix: "yunka_system_"
-  # table name
+  # table name, more table like "yunka_system_api,yunka_system_other"
   Table: "yunka_system_api"
   # source file path
   SourceFile: "./tmpl/dependency/model.go"

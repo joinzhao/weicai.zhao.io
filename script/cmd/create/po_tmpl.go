@@ -2,6 +2,7 @@ package create
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -31,23 +32,36 @@ func (cmd *poTmplCmd) Do() error {
 		return err
 	}
 
-	columns, err := source.New(db).Find(dbName, cmd.cfg.Table)
+	var errS error
+	for _, table := range cmd.cfg.Table {
+		columns, err := source.New(db).Find(dbName, table)
 
-	// transfer
-	fields := visitor.ColumnToField(columns)
+		if err != nil {
+			errS = errors.Join(errS, err)
+			continue
+		}
 
-	// rename
-	structName := tools.UnderlineToUpperCamelCase(strings.TrimPrefix(cmd.cfg.Table, cmd.cfg.Prefix))
+		// transfer
+		fields := visitor.ColumnToField(columns)
 
-	// visitor
-	v := visitor.NewPoVisitor(fields, structName, cmd.cfg.Table)
+		// rename
+		structName := tools.UnderlineToUpperCamelCase(strings.TrimPrefix(table, cmd.cfg.Prefix))
 
-	var targetFile = filepath.Join(cmd.cfg.TargetPath, fmt.Sprintf("%s.go", strings.TrimPrefix(cmd.cfg.Table, cmd.cfg.Prefix)))
+		// visitor
+		v := visitor.NewPoVisitor(fields, structName, table)
 
-	c := create.NewTmplCmd(v, create.TmplConfig{
-		TmplFile:   cmd.cfg.SourceFile,
-		TargetFile: targetFile,
-	})
+		var targetFile = filepath.Join(cmd.cfg.TargetPath, fmt.Sprintf("%s.go", strings.TrimPrefix(table, cmd.cfg.Prefix)))
 
-	return c.Do()
+		c := create.NewTmplCmd(v, create.TmplConfig{
+			TmplFile:   cmd.cfg.SourceFile,
+			TargetFile: targetFile,
+		})
+
+		err = c.Do()
+		if err != nil {
+			errS = errors.Join(errS, err)
+		}
+	}
+
+	return errS
 }

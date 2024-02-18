@@ -2,6 +2,7 @@ package create
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -31,26 +32,33 @@ func (cmd *repoTmplCmd) Do() error {
 		return err
 	}
 
-	columns, err := source.NewUnq(db).Find(dbName, cmd.cfg.Table)
-	if err != nil {
-		return err
+	var errS error
+	for _, table := range cmd.cfg.Table {
+		columns, err := source.NewUnq(db).Find(dbName, table)
+		if err != nil {
+			errS = errors.Join(errS, err)
+			continue
+		}
+		if len(columns) == 0 {
+			continue
+		}
+
+		// rename
+		structName := tools.UnderlineToUpperCamelCase(strings.TrimPrefix(table, cmd.cfg.Prefix))
+
+		// visitor
+		v := visitor.NewRepoVisitor(structName, cmd.cfg.NewPoPath, cmd.cfg.OldPoPath, columns[0])
+
+		var targetFile = filepath.Join(cmd.cfg.TargetPath, fmt.Sprintf("%s.go", strings.TrimPrefix(table, cmd.cfg.Prefix)))
+
+		c := create.NewTmplCmd(v, create.TmplConfig{
+			TmplFile:   cmd.cfg.SourceFile,
+			TargetFile: targetFile,
+		})
+		if err = c.Do(); err != nil {
+			errS = errors.Join(errS, err)
+		}
 	}
-	if len(columns) == 0 {
-		return nil
-	}
 
-	// rename
-	structName := tools.UnderlineToUpperCamelCase(strings.TrimPrefix(cmd.cfg.Table, cmd.cfg.Prefix))
-
-	// visitor
-	v := visitor.NewRepoVisitor(structName, cmd.cfg.NewPoPath, cmd.cfg.OldPoPath, columns[0])
-
-	var targetFile = filepath.Join(cmd.cfg.TargetPath, fmt.Sprintf("%s.go", strings.TrimPrefix(cmd.cfg.Table, cmd.cfg.Prefix)))
-
-	c := create.NewTmplCmd(v, create.TmplConfig{
-		TmplFile:   cmd.cfg.SourceFile,
-		TargetFile: targetFile,
-	})
-
-	return c.Do()
+	return errS
 }

@@ -9,7 +9,7 @@ Po:
     MaxOpenConn: 10
     MaxLifeTime: 10
   Prefix: "yunka_system_"
-  Table: "yunka_system_api"
+  Table: "yunka_system_api,yunka_system_api1"
   SourceFile: "./tmpl/po/model.go"
   TargetPath: "./new/po"
   NewPoPath: ""
